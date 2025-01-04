@@ -1,16 +1,37 @@
-from flask import Flask, jsonify
+from flask import Blueprint, jsonify
+from app.database import mysql
 
-app = Flask(__name__)
+api_bp = Blueprint('api', __name__)
 
-@app.route('/stages-overview', methods=['GET'])
-def get_stages_overview():
-    # Mocked data
-    stages = [
-        {"id": 1, "name": "Stage 1", "description": "Enroll in course", "estimated_time": "2 weeks"},
-        {"id": 2, "name": "Stage 2", "description": "Theory lessons", "estimated_time": "4 weeks"},
-        {"id": 3, "name": "Stage 3", "description": "Practical lessons", "estimated_time": "6 weeks"},
-    ]
-    return jsonify(stages)
+@api_bp.route('/stages-overview/<int:user_id>', methods=['GET'])
+def get_user_stages(user_id):
+    try:
+        cursor = mysql.connection.cursor()
+        
+        # Zapytanie do bazy danych
+        query = """
+        SELECT 
+            ModuleName, CompletionStatus, CompletionDate 
+        FROM Progress 
+        WHERE UserID = %s;
+        """
+        cursor.execute(query, (user_id,))
+        progress = cursor.fetchall()
 
-if __name__ == '__main__':
-    app.run(debug=True)
+        # Przygotowanie odpowiedzi JSON
+        stages = []
+        for row in progress:
+            stages.append({
+                "module_name": row[0],
+                "completion_status": row[1],
+                "completion_date": str(row[2]) if row[2] else None
+            })
+
+        cursor.close()
+        return jsonify({
+            "user_id": user_id,
+            "stages": stages
+        }), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
