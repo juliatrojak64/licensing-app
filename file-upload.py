@@ -31,6 +31,17 @@ def find_material(material_id):
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+# Helper function to validate metadata
+def validate_metadata(data):
+    errors = []
+    if not data.get('title'):
+        errors.append("Title is required.")
+    if not data.get('description'):
+        errors.append("Description is required.")
+    if not data.get('category'):
+        errors.append("Category is required.")
+    return errors
+
 # Helper function to upload file to S3
 def upload_to_s3(file: FileStorage, filename: str):
     try:
@@ -60,12 +71,16 @@ def upload_material():
 
     filename = secure_filename(file.filename)
 
+    data = request.form
+    validation_errors = validate_metadata(data)
+    if validation_errors:
+        return jsonify({'errors': validation_errors}), 400
+
     try:
         file_url = upload_to_s3(file, filename)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-    data = request.form
     new_material = {
         'id': len(study_materials) + 1,  # Simple ID generator
         'title': data.get('title'),
@@ -85,6 +100,10 @@ def edit_material(material_id):
         return jsonify({'error': 'Material not found'}), 404
 
     data = request.json
+    validation_errors = validate_metadata(data)
+    if validation_errors:
+        return jsonify({'errors': validation_errors}), 400
+
     material.update({
         'title': data.get('title', material['title']),
         'description': data.get('description', material['description']),
