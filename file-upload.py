@@ -134,6 +134,12 @@ def delete_material(material_id):
 def get_all_materials():
     return jsonify({'materials': study_materials})
 
+# Endpoint: Retrieve study materials by category
+@app.route('/api/materials/category/<string:category>', methods=['GET'])
+def get_materials_by_category(category):
+    filtered_materials = [material for material in study_materials if material['category'].lower() == category.lower()]
+    return jsonify({'materials': filtered_materials})
+
 # Endpoint: Retrieve a single study material
 @app.route('/api/materials/<int:material_id>', methods=['GET'])
 def get_material(material_id):
