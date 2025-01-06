@@ -143,5 +143,31 @@ def get_material(material_id):
 
     return jsonify({'material': material})
 
+# Endpoint: Approve a study material
+@app.route('/api/materials/<int:material_id>/approve', methods=['PATCH'])
+def approve_material(material_id):
+    material = find_material(material_id)
+    if not material:
+        return jsonify({'error': 'Material not found'}), 404
+
+    if material['status'] != 'pending_review':
+        return jsonify({'error': 'Material is not pending review'}), 400
+
+    material['status'] = 'approved'
+    return jsonify({'message': 'Material approved successfully', 'material': material})
+
+# Endpoint: Reject a study material
+@app.route('/api/materials/<int:material_id>/reject', methods=['PATCH'])
+def reject_material(material_id):
+    material = find_material(material_id)
+    if not material:
+        return jsonify({'error': 'Material not found'}), 404
+
+    if material['status'] != 'pending_review':
+        return jsonify({'error': 'Material is not pending review'}), 400
+
+    material['status'] = 'rejected'
+    return jsonify({'message': 'Material rejected successfully', 'material': material})
+
 if __name__ == '__main__':
     app.run(debug=True)
